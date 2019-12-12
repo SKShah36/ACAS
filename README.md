@@ -17,3 +17,23 @@ where x1, y1 are integer source coordinates and direction1 is the direction with
 first aircraft is initialized. dx1 and dy1 are destination coordinates.  
 
 There is a project report present here as well.
+
+## Simple Controller
+
+### Flowchart
+
+![](Artifacts/SimpleController_Flowchart.png)
+
+### Pseudo Code
+
+![](Artifacts/SimpleController_PseudoCode.JPG)
+
+## Complete Controller
+
+### Pseudo Code
+
+#### Driver Pseudo
+![](Artifacts/complete_controller_driver_pseudo.PNG)
+
+#### Command Pseudo
+![](Artifacts/complete_controller_command.PNG)

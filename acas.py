@@ -1,12 +1,20 @@
+'''
+This code is contributed by Sagar Shah as implementation of the Air Collision Avoidance System Project
+'''
+
 import argparse
 import random
 
-
+# Using a global priority variable
 priority = None
 
+# Variable to resolve a conflict when two aircrafts are facing each other in opposite directions.
+resolve = False
 
+
+# The aircraft class
 class Aircraft:
-    def __init__(self, src: tuple=(1, 3), dest: tuple=(2, 3), current_direction=0):
+    def __init__(self, src: tuple = (1, 3), dest: tuple = (2, 3), current_direction=0):
         self._source = src
         self._destination = dest
         self._current_location = [src[0], src[1]]
@@ -29,6 +37,7 @@ class Aircraft:
     def has_reached_destination(self):
         return self._current_location[0] == self._destination[0] and self._current_location[1] == self._destination[1]
 
+    # Sets the position of the aircraft based on the command received
     def follow_command(self, command):
         if command == "L":
             self._current_direction = wrap_360(self._current_direction, 90)
@@ -50,50 +59,7 @@ class Aircraft:
                 self._current_location[1] += -1
 
 
-def wrap_360(current_degrees, rotation_degrees):
-    current_degrees += rotation_degrees
-    current_degrees = current_degrees % 360
-
-    if current_degrees < 0:
-        current_degrees += 360
-
-    return current_degrees
-
-
-def decide_direction(p, q, direction):
-    a = abs(p - q)
-    b = abs(p - q) + 1
-    c = abs(p - q) - 1
-
-    if b < a:
-        return wrap_360(direction, 90), "L"
-
-    elif c < a:
-        return wrap_360(direction, -90), "R"
-
-
-def is_correct_direction(location_data: tuple):
-    x1, y1, x2, y2, direction = location_data
-    if direction == 0:
-        return x1 < x2
-
-    elif direction == 90:
-        return y1 < y2
-
-    elif direction == 180:
-        return x1 > x2
-
-    elif direction == 270:
-        return y1 > y2
-
-
-def same_coordinates(x1, y1, x2, y2):
-    return x1 == x2 and y1 == y2
-
-
-resolve = False
-
-
+# The aircraft controller class
 class AircraftController:
     def __init__(self):
         pass
@@ -141,7 +107,8 @@ class AircraftController:
                 else:
                     return x1, y1, direction, "R"
 
-    def get_command(self, a1: Aircraft, a2: Aircraft = None):
+    # Return a command in the form of a string
+    def get_command(self, a1: Aircraft, a2: Aircraft = None) -> str:
         global resolve
         if a2 is None:
             location_data = a1.get_location_data()
@@ -202,6 +169,56 @@ class AircraftController:
                 return command
 
 
+# Helper functions
+def wrap_360(current_degrees, rotation_degrees):
+    current_degrees += rotation_degrees
+    current_degrees = current_degrees % 360
+
+    if current_degrees < 0:
+        current_degrees += 360
+
+    return current_degrees
+
+
+def decide_direction(p, q, direction):
+    a = abs(p - q)
+    b = abs(p - q) + 1
+    c = abs(p - q) - 1
+
+    if b < a:
+        return wrap_360(direction, 90), "L"
+
+    elif c < a:
+        return wrap_360(direction, -90), "R"
+
+
+def is_correct_direction(location_data: tuple):
+    x1, y1, x2, y2, direction = location_data
+    if direction == 0:
+        return x1 < x2
+
+    elif direction == 90:
+        return y1 < y2
+
+    elif direction == 180:
+        return x1 > x2
+
+    elif direction == 270:
+        return y1 > y2
+
+
+def same_coordinates(x1, y1, x2, y2):
+    return x1 == x2 and y1 == y2
+
+
+# This is a function mimicking a safety monitor for the system
+def safety_monitor(location_data1, location_data2):
+    x1, y1, _ = location_data1
+    x2, y2, _ = location_data2
+    return same_coordinates(x1, y1, x2, y2)
+
+
+# The driver code that has access to the environment of ACAS
 def driver(args):
     source1 = (1, 3)
     destination1 = (2, 3)
@@ -210,18 +227,18 @@ def driver(args):
     direction1 = 0
     direction2 = 180
 
-    if len(args.source1) == 3:
+    if args.source1 is not None and len(args.source1) == 3:
         source1 = (args.source1[0], args.source1[1])
         direction1 = args.source1[2]
 
-    if len(args.source2) == 3:
+    if args.source2 is not None and len(args.source2) == 3:
         source2 = (args.source2[0], args.source2[1])
         direction2 = args.source2[2]
 
-    if len(args.dest1) == 2:
+    if args.dest1 is not None and len(args.dest1) == 2:
         source1 = (args.dest1[0], args.dest1[1])
 
-    if len(args.dest2) == 2:
+    if args.dest2 is not None and len(args.dest2) == 2:
         source1 = (args.dest2[0], args.dest2[1])
 
     aircraft1 = Aircraft(source1, destination1, direction1)
@@ -272,6 +289,11 @@ def driver(args):
             print("Command 2: {}".format(command2))
             aircraft1.follow_command(command1)
             aircraft2.follow_command(command2)
+
+        if not (aircraft1.has_reached_destination() or aircraft2.has_reached_destination()):
+            if not safety_monitor(loc1, loc2):
+                print("Collision.\nEntering in to error mode\nExiting...")
+                break
 
         if aircraft1.has_reached_destination():
             print("Aircraft1 has reached destination")
